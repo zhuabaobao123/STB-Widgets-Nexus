@@ -1,0 +1,13 @@
+{
+  "name": "stb-widgets",
+  "version-string": "1.0.0",
+  "description": "STB Widgets - a set of customizable SKSE HUD widgets for Skyrim SE/AE.",
+  "homepage": "https://github.com/STB-Team/STB-Widgets-Nexus",
+  "license": "MIT",
+  "dependencies": [
+    "glm",
+    "rapidcsv",
+    "simpleini",
+    "spdlog"
+  ]
+}
