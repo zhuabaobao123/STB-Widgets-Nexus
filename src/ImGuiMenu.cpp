@@ -65,6 +65,8 @@ namespace SKSE_Menu
 					changed = true;
 					if (SliderFloat("Opacity", &Data.AlphaLvl_, 0, 100))
 					changed = true;
+					if (Checkbox("Hide numbers", &Data.HideLvlNumbers_))
+					changed = true;
 					if (Checkbox("Combat mode", &Data.CombatLvl_))
 					changed = true;
 					if (Checkbox("Change mode", &Data.ChangeLvl_))

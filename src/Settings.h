@@ -74,6 +74,7 @@ private:
 		float scaleyLvl_{ 100 };
 	   static inline float AlphaLvl_{ 100 };
 	   static inline bool VisibleLvl_{ true };
+	   static inline bool HideLvlNumbers_{ false };
 	   static inline bool CombatLvl_{ false };
 	   static inline bool ChangeLvl_{ false };
 	   static inline float ChangeLvlDelay{ 1 };
@@ -164,6 +165,7 @@ private:
 	  static inline const wchar_t* PosLvlWidgetY{ L"fPosLvlWidgetY" };
 	  static inline const wchar_t* AlphaLvl{ L"fSetAlphaLvl" };
 	  static inline const wchar_t* VisibleLvl{ L"SetLvlVisible" };
+	  static inline const wchar_t* HideLvlNumbers{ L"HideLvlNumbers" };
 	  static inline const wchar_t* CombatLvl{ L"CombatModeLvl" };
 	  static inline const wchar_t* ChangeLvl{ L"ChangeModeLvl" };
 	  static inline const wchar_t* LvlChangeDelay{ L"LvlChangeDelay" };
@@ -238,6 +240,7 @@ private:
 		ini.SetDoubleValue(sectionbase, ScaleLvlWidget, scaleLvl_);
 		ini.SetDoubleValue(sectionbase, AlphaLvl, AlphaLvl_);
 		ini.SetBoolValue(sectionbase, VisibleLvl, VisibleLvl_);
+		ini.SetBoolValue(sectionbase, HideLvlNumbers, HideLvlNumbers_);
 		ini.SetBoolValue(sectionbase, CombatLvl, CombatLvl_);
 		ini.SetBoolValue(sectionbase, ChangeLvl, ChangeLvl_);
 		ini.SetDoubleValue(sectionbase, LvlChangeDelay, ChangeLvlDelayBase);
@@ -324,6 +327,7 @@ private:
 		ini.SetDoubleValue(section, ScaleLvlWidget, scaleLvl_);
 		ini.SetDoubleValue(section, AlphaLvl, AlphaLvl_);
 		ini.SetBoolValue(section, VisibleLvl, VisibleLvl_);
+		ini.SetBoolValue(section, HideLvlNumbers, HideLvlNumbers_);
 		ini.SetBoolValue(section, CombatLvl, CombatLvl_);
 		ini.SetBoolValue(section, ChangeLvl, ChangeLvl_);
 		ini.SetDoubleValue(section, LvlChangeDelay, ChangeLvlDelayBase);
@@ -438,6 +442,7 @@ private:
 		  read_double(ini, ScaleLvlWidget, scaleLvl_);
 		  read_double(ini, AlphaLvl, AlphaLvl_);
 		  read_bool(ini, VisibleLvl, VisibleLvl_);
+		  read_bool(ini, HideLvlNumbers, HideLvlNumbers_);
 		  read_bool(ini, CombatLvl, CombatLvl_);
 		  read_bool(ini, ChangeLvl, ChangeLvl_);
 		  read_double(ini, LvlChangeDelay, ChangeLvlDelayBase);
@@ -538,6 +543,7 @@ private:
 		  read_double(ini, ScaleLvlWidget, scaleLvl_);
 		  read_double(ini, AlphaLvl, AlphaLvl_);
 		  read_bool(ini, VisibleLvl, VisibleLvl_);
+		  read_bool(ini, HideLvlNumbers, HideLvlNumbers_);
 		  read_bool(ini, CombatLvl, CombatLvl_);
 		  read_bool(ini, ChangeLvl, ChangeLvl_);
 		  read_double(ini, LvlChangeDelay, ChangeLvlDelayBase);

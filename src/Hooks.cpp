@@ -318,8 +318,12 @@ private:
 			else if (auto ui = UI::GetSingleton();
 					 ui && !ui->IsMenuOpen(RE::MessageBoxMenu::MENU_NAME) && !ui->IsMenuOpen(RE::DialogueMenu::MENU_NAME) &&
 					 !ui->IsMenuOpen(RE::CursorMenu::MENU_NAME) && !ui->IsMenuOpen(RE::MapMenu::MENU_NAME) &&
-					 !ui->IsMenuOpen(RE::FaderMenu::MENU_NAME) && !ui->IsMenuOpen(RE::LoadingMenu::MENU_NAME))
+					 !ui->IsMenuOpen(RE::FaderMenu::MENU_NAME) && !ui->IsMenuOpen(RE::LoadingMenu::MENU_NAME)) {
+				// Configure widgets once their movies have loaded (coc / new game race),
+				// then keep them visible in normal play.
+				ConfigureHudIfNeeded();
 				check2(true);
+			}
 			}
 		const auto skills = player->GetInfoRuntimeData().skills;
 		const float xp    = (skills && skills->data) ? skills->data->xp : Settings::LvlCheck[1];

@@ -94,6 +94,12 @@ auto WidgetLvl::update() -> void
 	  std::to_string(player->IsInCombat());
   const RE::GFxValue lvl{ static_cast<RE::BSFixedString>(result) };
   widgetLvl->uiMovie->Invoke("widget.Update", nullptr, &lvl, 1);
+
+  // Hide only the "current / max" XP number (lvlExp_Text), keeping the level and bar.
+  // Re-applied every frame because the preset frame can re-instantiate the textfield
+  // (which resets its _visible). The level text (lvl_Text) is left untouched.
+  const RE::GFxValue expVisible{ !Settings::HideLvlNumbers_ };
+  widgetLvl->uiMovie->SetVariable("_root.widget.lvlExp_Text._visible", expVisible);
 }
 
 void WidgetLvl::AdvanceMovie(const float interval, const uint32_t current_time)

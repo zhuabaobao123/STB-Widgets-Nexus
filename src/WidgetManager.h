@@ -4,8 +4,7 @@
 // loaded widget movie. Call after settings change or on menu transitions.
 void CheckInI();
 
-// Safely toggle the visibility of a variable inside the vanilla HUD movie.
-// Writes only when the value actually changes, and re-applies automatically
-// if the HUD movie gets recreated (otherwise hidden vanilla elements such as
-// the compass arrow/shout meter could silently reappear).
+// Set the visibility of a variable inside the vanilla HUD movie. Writes
+// unconditionally (no caching) so it stays correct even when another HUD mod
+// changes the same Scaleform variable behind our back.
 void SetHudVisible(RE::GFxMovieView* hud, const char* path, bool visible);

@@ -1,7 +1,5 @@
 #include "WidgetManager.h"
 #include "Settings.h"
-#include <string_view>
-#include <unordered_map>
 
 using namespace RE;
 
@@ -11,21 +9,9 @@ void SetHudVisible(RE::GFxMovieView* hud, const char* path, bool visible)
 		return;
 	}
 
-	static RE::GFxMovieView*                          last_hud = nullptr;
-	static std::unordered_map<std::string_view, bool> state;
-
-	// The HUD movie is recreated on some transitions; start fresh so we
-	// re-apply our overrides to the new instance.
-	if (hud != last_hud) {
-		last_hud = hud;
-		state.clear();
-	}
-
-	if (const auto it = state.find(path); it != state.end() && it->second == visible) {
-		return;
-	}
-	state[path] = visible;
-
+	// No caching: another HUD mod can change the real Scaleform variable behind our
+	// back, so a cached "already correct" value would leave the vanilla element in
+	// the wrong state. Always write it - SetVariable on a bool is cheap.
 	const RE::GFxValue value{ visible };
 	hud->SetVariable(path, value);
 }
@@ -71,6 +57,8 @@ void CheckInI()
 		if (settings.VisibleEquipKey)
 			widget->uiMovie->Invoke("widget.setVisible", nullptr, &Visible, 1);
 		widget->uiMovie->Invoke("widget.setlvlPreset", nullptr, &preset, 1);
+		const GFxValue expVisible = !settings.HideLvlNumbers_;
+		widget->uiMovie->SetVariable("_root.widget.lvlExp_Text._visible", expVisible);
 		widget->uiMovie->Invoke("widget.setScale", nullptr, &scale, 1);
 		widget->uiMovie->Invoke("widget.setPosX", nullptr, &scalex, 1);
 		widget->uiMovie->Invoke("widget.setPosY", nullptr, &scaley, 1);
@@ -88,8 +76,12 @@ void CheckInI()
 		const GFxValue preset  = settings.PresetEquip_;
 		const GFxValue Visible = settings.VisibleEquip_;
 		if (auto hud = ui->GetMenu<RE::HUDMenu>(); hud && hud->uiMovie) {
+			// Only hide the vanilla arrow info when the STB equip widget is actually
+			// shown (enabled + not toggled off by the hotkey). Otherwise we would leave
+			// both hidden = the "missing HUD element" the bug report describes.
+			const bool stbEquipShown = settings.VisibleEquip_ && settings.VisibleEquipKey;
 			SetHudVisible(hud->uiMovie.get(), "_root.HUDMovieBaseInstance.ArrowInfoInstance._visible",
-				!Settings::VisibleEquip_);
+				!stbEquipShown);
 		}
 		if (settings.VisibleEquipKey)
 			widget->uiMovie->Invoke("widget.setVisible", nullptr, &Visible, 1);
