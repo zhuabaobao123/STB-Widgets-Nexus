@@ -65,32 +65,54 @@ void RequestHudReconfig()
   logger::info("RequestHudReconfig");
 }
 
-void ConfigureHudIfNeeded()
+// Apply the full widget config once we are safely in the world. Returns true when there
+// is nothing left to do (applied, or not needed). Never touches the movies while a
+// LoadingMenu is up (that crashes Scaleform); the post-load fade is fine.
+static bool TryApplyHudConfig()
 {
   if (!g_hudNeedsConfig) {
-    return;
+    return true;
   }
   const auto ui = RE::UI::GetSingleton();
   if (!ui) {
-    return;
+    return false;
   }
-  // Wait until the movies are actually loaded, otherwise show()/CheckInI would run
-  // against a null uiMovie and we'd clear the request too early (the coc/new-game race).
+  if (ui->IsMenuOpen(RE::LoadingMenu::MENU_NAME)) {
+    return false;  // still loading - wait
+  }
   const auto equip = ui->GetMenu(WidgetEquip::MENU_NAME);
   if (!equip || !equip->uiMovie) {
-    static int waitLog = 0;
-    if ((waitLog++ % 120) == 0) {
-      logger::info("ConfigureHudIfNeeded waiting: equipMenu={} movie={}", static_cast<bool>(equip),
-        equip ? static_cast<bool>(equip->uiMovie) : false);
-    }
-    return;
+    return false;  // movies still loading
   }
-
   ShowAllWidgets();
   CheckInI();
   check2(true);
   g_hudNeedsConfig = false;
-  logger::info("ConfigureHudIfNeeded: movies ready -> show + CheckInI done");
+  logger::info("HUD configured");
+  return true;
+}
+
+// Fallback path, driven every frame from the PlayerCharacter::Update hook.
+void ConfigureHudIfNeeded()
+{
+  TryApplyHudConfig();
+}
+
+// Primary path: polled through the SKSE task queue, started the moment the loading screen
+// closes. The task queue keeps ticking during the post-load fade-in, whereas the player
+// Update hook is paused then - so this is what makes the preset apply immediately instead
+// of ~1s later once the player becomes active. Bounded so it can never spin forever.
+static void PollHudConfig(int attempts)
+{
+  if (TryApplyHudConfig()) {
+    return;  // applied, or nothing to do
+  }
+  if (attempts <= 0) {
+    return;  // give up; the Update hook keeps trying as a fallback
+  }
+  if (const auto task = SKSE::GetTaskInterface()) {
+    task->AddTask([attempts]() { PollHudConfig(attempts - 1); });
+  }
 }
 
 // NOTE: the STB widgets are kAlwaysOpen overlay menus and must NEVER be closed with
@@ -143,8 +165,9 @@ static void QueueHudRestore()
       return;
     }
     if (!AnyBlockingMenuOpen(ui, RE::BSFixedString{})) {
-      check2(true);
-      CheckInI();
+      check2(true);  // visibility only. Do NOT CheckInI from a deferred task: its
+                     // setPreset -> gotoAndPlay rebuilds a movie frame and crashes
+                     // Scaleform when the movie hasn't advanced yet on a cold load.
     }
   });
 }
@@ -161,21 +184,19 @@ auto MenuHandler::ProcessEvent(const MenuOpenCloseEvent* event, BSTEventSource<M
 
   const auto& name = event->menuName;
 
-  // Loading screens / F9 quickload. CheckInI() must run UNCONDITIONALLY here: it is
-  // what pushes each widget's position/scale/alpha/internal visibility into the movie
-  // once it has finished loading. Gating it behind "no blocking menu" (as QueueHudRestore
-  // does) means that if a Fader/Cursor is briefly up at that instant - which is exactly
-  // the case on the first load from the main menu - the widgets never get configured and
-  // stay internally invisible until a save/load cycle happens to win the timing race.
+  // Loading screens / F9 quickload. Do NOT CheckInI here: during the load the widget
+  // movies are mid-transition and setPreset/gotoAndPlay crashes Scaleform (this is the
+  // load-time CTD). Just flag a reconfig; ConfigureHudIfNeeded applies it once we are
+  // back in the world (LoadingMenu/Fader closed, movies settled).
   if (name == LoadingMenu::MENU_NAME) {
-    CheckInI();
-    RequestHudReconfig();  // movies may still be loading; Update re-applies once ready
+    RequestHudReconfig();
     if (event->opening) {
       check2(false);
     } else {
-      ShowAllWidgets();  // kShow now (like the original / kPostLoadGame); coc relies on this
+      ShowAllWidgets();  // kShow (safe: just queues a UI message); coc relies on this
       check2(true);
-      QueueHudRestore();  // one-frame-later safety net once the fade has cleared
+      PollHudConfig(600);  // apply config as soon as the load ends, via the task queue
+                           // (ticks during the fade, unlike the player Update hook)
     }
     return BSEventNotifyControl::kContinue;
   }

@@ -24,6 +24,16 @@ void CheckInI()
 		return;
 	}
 
+	// The widget movies are mid-transition (torn down / rebuilt) only while a LoadingMenu
+	// is active; invoking setPreset/gotoAndPlay on them then crashes Scaleform. The old
+	// kHide-based flow was safe only because it CLOSED the menus during loads, so GetMenu()
+	// returned null and these invokes were skipped. We keep the menus open now, so we skip
+	// explicitly during loads. (Only LoadingMenu - not the post-load fade: the movies are
+	// already settled during the fade, and configuring then is what avoids the ~1s pop.)
+	if (ui->IsMenuOpen(RE::LoadingMenu::MENU_NAME)) {
+		return;
+	}
+
 	if (ui->GetMenu("resistWidget") && ui->GetMenu("resistWidget")->uiMovie) {
 		const GFxValue preset = settings.PresetResist_;
 		auto           widget = ui->GetMenu("resistWidget");
