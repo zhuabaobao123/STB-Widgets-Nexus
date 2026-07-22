@@ -445,11 +445,11 @@ auto WidgetEquip::update() -> void
 	SpellItem* spell = nullptr;
 	if (shouteq->variations[2].word && IsWordUnlocked(0, 0, 0, shouteq->variations[2].word))
 		spell = shouteq->variations[2].spell;
-	else if (shouteq->variations[2].word && IsWordUnlocked(0, 0, 0, shouteq->variations[1].word))
+	else if (shouteq->variations[1].word && IsWordUnlocked(0, 0, 0, shouteq->variations[1].word))
 		spell = shouteq->variations[1].spell;
 	else if (shouteq->variations[0].word && IsWordUnlocked(0, 0, 0, shouteq->variations[0].word))
 		spell = shouteq->variations[0].spell;
-	if (spell && !spell->effects.empty()) {
+	if (spell && !spell->effects.empty() && spell->effects[0]) {
 		BGSEntryPoint::HandleEntryPoint(BGSEntryPoint::ENTRY_POINT::kModSpellMagnitude, player, spell, nullptr, &num);
 		power = (int)ceil((spell->effects[0]->effectItem.magnitude * num));
 	}
