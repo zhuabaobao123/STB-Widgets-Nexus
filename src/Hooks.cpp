@@ -427,22 +427,24 @@ private:
 		if (actor->IsPlayerRef()) {
 				if (bound_object->As<TESObjectWEAP>() || (bound_object->As<TESObjectARMO>() && bound_object->As<TESObjectARMO>()->IsShield()))
 					ShowWidgetEquip();
-				if (bound_object->GetFormType() == FormType::AlchemyItem) {
-					if (bound_object->As<AlchemyItem>()->IsPoison())
+				if (const auto alchemyItem = bound_object->As<AlchemyItem>()) {
+					if (alchemyItem->IsPoison())
 						ShowWidgetEquip();
-					if (auto ef = bound_object->As<AlchemyItem>()->effects[0]->baseEffect;
-						!ef->data.flags.any(EffectSetting::EffectSettingData::Flag::kRecover) &&
-						!ef->data.flags.any(EffectSetting::EffectSettingData::Flag::kDetrimental) &&
-						!ef->data.flags.any(EffectSetting::EffectSettingData::Flag::kHostile)) {
-						if (ef->data.primaryAV == ActorValue::kHealth) {
-							ShowWidgetEquip();
-							WidgetEquip::LastUseHP = bound_object;
-						} else if (ef->data.primaryAV == ActorValue::kStamina) {
-							ShowWidgetEquip();
-							WidgetEquip::LastUseST = bound_object;
-						} else if (ef->data.primaryAV == ActorValue::kMagicka) {
-							ShowWidgetEquip();
-							WidgetEquip::LastUseMP = bound_object;
+					if (!alchemyItem->effects.empty() && alchemyItem->effects[0]) {
+						if (auto ef = alchemyItem->effects[0]->baseEffect;
+							ef && !ef->data.flags.any(EffectSetting::EffectSettingData::Flag::kRecover) &&
+							!ef->data.flags.any(EffectSetting::EffectSettingData::Flag::kDetrimental) &&
+							!ef->data.flags.any(EffectSetting::EffectSettingData::Flag::kHostile)) {
+							if (ef->data.primaryAV == ActorValue::kHealth) {
+								ShowWidgetEquip();
+								WidgetEquip::LastUseHP = bound_object;
+							} else if (ef->data.primaryAV == ActorValue::kStamina) {
+								ShowWidgetEquip();
+								WidgetEquip::LastUseST = bound_object;
+							} else if (ef->data.primaryAV == ActorValue::kMagicka) {
+								ShowWidgetEquip();
+								WidgetEquip::LastUseMP = bound_object;
+							}
 						}
 					}
 				}

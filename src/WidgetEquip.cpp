@@ -9,7 +9,7 @@ using namespace RE;
 // return a safe default instead.
 static RE::ActorValue SafeAssociatedSkill(RE::SpellItem* spell)
 {
-  if (spell && !spell->effects.empty() && spell->effects[0]->baseEffect) {
+  if (spell && !spell->effects.empty() && spell->effects[0] && spell->effects[0]->baseEffect) {
     return spell->effects[0]->baseEffect->data.associatedSkill;
   }
   return RE::ActorValue::kNone;
@@ -17,7 +17,7 @@ static RE::ActorValue SafeAssociatedSkill(RE::SpellItem* spell)
 
 static bool HasFirstEffect(RE::MagicItem* item)
 {
-  return item && !item->effects.empty() && item->effects[0]->baseEffect;
+  return item && !item->effects.empty() && item->effects[0] && item->effects[0]->baseEffect;
 }
 
 WidgetEquip::WidgetEquip()
