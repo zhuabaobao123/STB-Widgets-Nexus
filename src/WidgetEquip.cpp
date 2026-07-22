@@ -140,34 +140,42 @@ int GetFormIndex(TESForm* form) {
 }
 EnchantmentItem* CheckEnch(Actor* a, bool left)
 {
-  auto inv = a->GetInventory([](TESBoundObject& a_object) {
-	  if (a_object.IsWeapon()) {
-		  return true;
-	  }
-	  return false;
-  });
+  if (!a) {
+	return nullptr;
+  }
 
-  bool checkleft = false;
-  for (auto& [item, data] : inv) {
-	const auto& [count, entry] = data;
-	if (entry->extraLists) {
-		for (const auto& xList : *entry->extraLists) {
-			const auto xEnchLeft = xList->GetByType<ExtraWornLeft>();
-			const auto xEnchRight = xList->GetByType<ExtraWorn>();
-			if ((xEnchLeft || xEnchRight) && xList->GetByType<ExtraEnchantment>()) {
-				if (xEnchLeft)
-					checkleft = true;
-				else if (xEnchRight)
-					checkleft = false;
-				if (checkleft == left)
-					return xList->GetByType<ExtraEnchantment>()->enchantment;
-			}
-		}
+  const auto equippedObject = a->GetEquippedObject(left);
+  const auto weapon = equippedObject ? equippedObject->As<TESObjectWEAP>() : nullptr;
+  if (!weapon) {
+	return nullptr;
+  }
+
+  // Only inspect the entry that is actually equipped in this hand. The old code
+  // rebuilt and scanned the actor's complete weapon inventory every update, which
+  // could race an inventory mutation (for example, crafting a weapon) and also
+  // generated needless allocator traffic on the game's update thread.
+  if (const auto entry = a->GetEquippedEntryData(left); entry && entry->extraLists) {
+	for (const auto& extraList : *entry->extraLists) {
+	  if (!extraList) {
+		continue;
+	  }
+
+	  const bool wornInThisHand = left ? extraList->GetByType<ExtraWornLeft>() != nullptr
+	                                   : extraList->GetByType<ExtraWorn>() != nullptr;
+	  if (!wornInThisHand) {
+		continue;
+	  }
+
+	  if (const auto extraEnchantment = extraList->GetByType<ExtraEnchantment>();
+	      extraEnchantment && extraEnchantment->enchantment) {
+		return extraEnchantment->enchantment;
+	  }
 	}
   }
-  if (a->GetEquippedObject(left) && a->GetEquippedObject(left)->As<TESObjectWEAP>() &&
-	  a->GetEquippedObject(left)->As<TESObjectWEAP>()->formEnchanting)
-	return a->GetEquippedObject(left)->As<TESObjectWEAP>()->formEnchanting;
+
+  if (weapon->formEnchanting) {
+	return weapon->formEnchanting;
+  }
   return nullptr;
 }
 
