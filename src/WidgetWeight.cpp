@@ -96,8 +96,10 @@ auto WidgetWeight::update() -> void
 void WidgetWeight::AdvanceMovie(const float interval, const uint32_t current_time)
 {
   logger::debug("AdvanceMovie");
-  if (Settings::VisibleWeight_ && Settings::VisibleEquipKey)
-  update();
+  if (Settings::VisibleWeight_ && Settings::VisibleEquipKey && Settings::UpdateWeight >= 1) {
+	update();
+	Settings::UpdateWeight = 0;
+  }
   IMenu::AdvanceMovie(interval, current_time);
 }
 

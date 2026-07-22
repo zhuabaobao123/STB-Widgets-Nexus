@@ -384,6 +384,10 @@ private:
 				Settings::UpdatePlayTime += delta;
 		if (Settings::VisibleEquip_ && Settings::UpdateEquip < 0.2f)
 				Settings::UpdateEquip += delta;
+		if (Settings::VisibleResist_ && Settings::UpdateResist < 0.2f)
+				Settings::UpdateResist += delta;
+		if (Settings::VisibleLvl_ && Settings::UpdateLvl < 0.2f)
+				Settings::UpdateLvl += delta;
 		if (Settings::VisibleWeight_ && Settings::UpdateWeight < 1)
 				Settings::UpdateWeight += delta;
 		if (Settings::VisibleGold_ && Settings::UpdateGold < 1)

@@ -29,6 +29,8 @@ private:
 	  static inline float UpdateEquip{ 100 };
 	  static inline float UpdateWeight{ 100 };
 	  static inline float UpdateGold{ 100 };
+	  static inline float UpdateResist{ 100 };
+	  static inline float UpdateLvl{ 100 };
 	  static inline int offsetAmmo{ 0xbf };
 	  static inline int offsetShout{ 0x4c };
 	  static inline int HideKey{ 87 };

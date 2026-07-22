@@ -514,8 +514,10 @@ auto WidgetEquip::update() -> void
 void WidgetEquip::AdvanceMovie(const float interval, const uint32_t current_time)
 {
   logger::debug("AdvanceMovie");
- if (Settings::VisibleEquip_ && Settings::VisibleEquipKey)
+ if (Settings::VisibleEquip_ && Settings::VisibleEquipKey && Settings::UpdateEquip >= 0.2f) {
   update();
+  Settings::UpdateEquip = 0;
+ }
   IMenu::AdvanceMovie(interval, current_time);
 }
 
