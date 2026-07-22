@@ -229,7 +229,7 @@ bool HasKeywordAll(RE::Actor* actor, RE::BGSKeyword* keyword)
 
 RE::AlchemyItem* GetPoisonOnWeap(RE::InventoryEntryData* entry)
 {
-  if (entry->extraLists)
+  if (entry && entry->extraLists)
 	for (const auto& xList : *entry->extraLists)
 		if (xList)
 			if (const auto xPoison = xList->GetByType<RE::ExtraPoison>(); xPoison)
@@ -239,13 +239,20 @@ RE::AlchemyItem* GetPoisonOnWeap(RE::InventoryEntryData* entry)
 std::string MakeWeaponInfo(PlayerCharacter* player, bool left) {
   std::string w = "&";
   auto num = 0.f;
-  auto weap = player->GetEquippedObject(left)->As<TESObjectWEAP>();
+	const auto equippedObject = player ? player->GetEquippedObject(left) : nullptr;
+	const auto weap = equippedObject ? equippedObject->As<TESObjectWEAP>() : nullptr;
+	if (!weap) {
+		return {};
+	}
+	const auto equippedEntry = player->GetEquippedEntryData(left);
 	if (player->GetCurrentAmmo() && weap->HasKeywordString("WeapTypeBow")) {
 		auto scale = 1.f;
 		BGSEntryPoint::HandleEntryPoint(BGSEntryPoint::ENTRY_POINT::kModAttackDamage, player, nullptr, nullptr, &scale);
 		num = player->GetCurrentAmmo()->data.damage * scale;
 	}
-	num += player->GetDamage(player->GetEquippedEntryData(left));
+	if (equippedEntry) {
+		num += player->GetDamage(equippedEntry);
+	}
 	std::string damage = std::to_string((int)ceil(num));
   if (auto ench = CheckEnch(player, left); HasFirstEffect(ench)) {
 	std::string color = "0";
@@ -266,16 +273,15 @@ std::string MakeWeaponInfo(PlayerCharacter* player, bool left) {
   std::string poisonDMG = "0";
   if (GetEquippedWeaponPoisonCount(player, left) > 0)
 	poisonnum = std::to_string(GetEquippedWeaponPoisonCount(player, left));
-  if (player->GetEquippedEntryData(left))
-  if (auto pois = GetPoisonOnWeap(player->GetEquippedEntryData(left)); HasFirstEffect(pois)) {
+	if (auto pois = GetPoisonOnWeap(equippedEntry); HasFirstEffect(pois)) {
 	auto scale = 1.f;
 	BGSEntryPoint::HandleEntryPoint(BGSEntryPoint::ENTRY_POINT::kModSpellMagnitude, player, pois, nullptr, &scale);
 	poisonDMG = std::to_string((int)ceil(pois->effects[0]->effectItem.magnitude * scale));
   }
   auto name = weap->GetName();
-  if (player->GetEquippedEntryData(left) && player->GetEquippedEntryData(left)->GetDisplayName())
-  name = player->GetEquippedEntryData(left)->GetDisplayName();
-  int index = GetFormIndex(player->GetEquippedObject(left));
+	if (equippedEntry && equippedEntry->GetDisplayName())
+		name = equippedEntry->GetDisplayName();
+	int index = GetFormIndex(equippedObject);
   if (weap->formID == 0x1f4)
   name = "";
   std::string result =
@@ -296,8 +302,8 @@ RE::InventoryEntryData* CheckForm(RE::Actor* a, TESBoundObject* item)
  std::set<RE::TESBoundObject*> inv;
  auto changes = a->GetInventoryChanges();
  if (changes && changes->entryList) {
-  for (auto entry : *changes->entryList) {
-	if (entry->object && item == entry->object) {
+	for (auto entry : *changes->entryList) {
+	if (entry && entry->object && item == entry->object) {
 			inv.insert(entry->object);
 			return entry;
 	}
