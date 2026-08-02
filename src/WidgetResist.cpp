@@ -90,8 +90,10 @@ auto ResistWidget::update() -> void {
 
 void ResistWidget::AdvanceMovie(const float interval, const uint32_t current_time) {
   logger::debug("AdvanceMovie");
- if (Settings::VisibleResist_ && Settings::VisibleEquipKey)
+ if (Settings::VisibleResist_ && Settings::VisibleEquipKey && Settings::UpdateResist >= 0.2f) {
   update();
+  Settings::UpdateResist = 0;
+ }
   IMenu::AdvanceMovie(interval, current_time);
 }
 

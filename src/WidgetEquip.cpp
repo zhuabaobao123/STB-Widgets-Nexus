@@ -9,7 +9,7 @@ using namespace RE;
 // return a safe default instead.
 static RE::ActorValue SafeAssociatedSkill(RE::SpellItem* spell)
 {
-  if (spell && !spell->effects.empty() && spell->effects[0]->baseEffect) {
+  if (spell && !spell->effects.empty() && spell->effects[0] && spell->effects[0]->baseEffect) {
     return spell->effects[0]->baseEffect->data.associatedSkill;
   }
   return RE::ActorValue::kNone;
@@ -17,7 +17,7 @@ static RE::ActorValue SafeAssociatedSkill(RE::SpellItem* spell)
 
 static bool HasFirstEffect(RE::MagicItem* item)
 {
-  return item && !item->effects.empty() && item->effects[0]->baseEffect;
+  return item && !item->effects.empty() && item->effects[0] && item->effects[0]->baseEffect;
 }
 
 WidgetEquip::WidgetEquip()
@@ -140,34 +140,42 @@ int GetFormIndex(TESForm* form) {
 }
 EnchantmentItem* CheckEnch(Actor* a, bool left)
 {
-  auto inv = a->GetInventory([](TESBoundObject& a_object) {
-	  if (a_object.IsWeapon()) {
-		  return true;
-	  }
-	  return false;
-  });
+  if (!a) {
+	return nullptr;
+  }
 
-  bool checkleft = false;
-  for (auto& [item, data] : inv) {
-	const auto& [count, entry] = data;
-	if (entry->extraLists) {
-		for (const auto& xList : *entry->extraLists) {
-			const auto xEnchLeft = xList->GetByType<ExtraWornLeft>();
-			const auto xEnchRight = xList->GetByType<ExtraWorn>();
-			if ((xEnchLeft || xEnchRight) && xList->GetByType<ExtraEnchantment>()) {
-				if (xEnchLeft)
-					checkleft = true;
-				else if (xEnchRight)
-					checkleft = false;
-				if (checkleft == left)
-					return xList->GetByType<ExtraEnchantment>()->enchantment;
-			}
-		}
+  const auto equippedObject = a->GetEquippedObject(left);
+  const auto weapon = equippedObject ? equippedObject->As<TESObjectWEAP>() : nullptr;
+  if (!weapon) {
+	return nullptr;
+  }
+
+  // Only inspect the entry that is actually equipped in this hand. The old code
+  // rebuilt and scanned the actor's complete weapon inventory every update, which
+  // could race an inventory mutation (for example, crafting a weapon) and also
+  // generated needless allocator traffic on the game's update thread.
+  if (const auto entry = a->GetEquippedEntryData(left); entry && entry->extraLists) {
+	for (const auto& extraList : *entry->extraLists) {
+	  if (!extraList) {
+		continue;
+	  }
+
+	  const bool wornInThisHand = left ? extraList->GetByType<ExtraWornLeft>() != nullptr
+	                                   : extraList->GetByType<ExtraWorn>() != nullptr;
+	  if (!wornInThisHand) {
+		continue;
+	  }
+
+	  if (const auto extraEnchantment = extraList->GetByType<ExtraEnchantment>();
+	      extraEnchantment && extraEnchantment->enchantment) {
+		return extraEnchantment->enchantment;
+	  }
 	}
   }
-  if (a->GetEquippedObject(left) && a->GetEquippedObject(left)->As<TESObjectWEAP>() &&
-	  a->GetEquippedObject(left)->As<TESObjectWEAP>()->formEnchanting)
-	return a->GetEquippedObject(left)->As<TESObjectWEAP>()->formEnchanting;
+
+  if (weapon->formEnchanting) {
+	return weapon->formEnchanting;
+  }
   return nullptr;
 }
 
@@ -221,7 +229,7 @@ bool HasKeywordAll(RE::Actor* actor, RE::BGSKeyword* keyword)
 
 RE::AlchemyItem* GetPoisonOnWeap(RE::InventoryEntryData* entry)
 {
-  if (entry->extraLists)
+  if (entry && entry->extraLists)
 	for (const auto& xList : *entry->extraLists)
 		if (xList)
 			if (const auto xPoison = xList->GetByType<RE::ExtraPoison>(); xPoison)
@@ -231,13 +239,20 @@ RE::AlchemyItem* GetPoisonOnWeap(RE::InventoryEntryData* entry)
 std::string MakeWeaponInfo(PlayerCharacter* player, bool left) {
   std::string w = "&";
   auto num = 0.f;
-  auto weap = player->GetEquippedObject(left)->As<TESObjectWEAP>();
+	const auto equippedObject = player ? player->GetEquippedObject(left) : nullptr;
+	const auto weap = equippedObject ? equippedObject->As<TESObjectWEAP>() : nullptr;
+	if (!weap) {
+		return {};
+	}
+	const auto equippedEntry = player->GetEquippedEntryData(left);
 	if (player->GetCurrentAmmo() && weap->HasKeywordString("WeapTypeBow")) {
 		auto scale = 1.f;
 		BGSEntryPoint::HandleEntryPoint(BGSEntryPoint::ENTRY_POINT::kModAttackDamage, player, nullptr, nullptr, &scale);
 		num = player->GetCurrentAmmo()->data.damage * scale;
 	}
-	num += player->GetDamage(player->GetEquippedEntryData(left));
+	if (equippedEntry) {
+		num += player->GetDamage(equippedEntry);
+	}
 	std::string damage = std::to_string((int)ceil(num));
   if (auto ench = CheckEnch(player, left); HasFirstEffect(ench)) {
 	std::string color = "0";
@@ -258,16 +273,15 @@ std::string MakeWeaponInfo(PlayerCharacter* player, bool left) {
   std::string poisonDMG = "0";
   if (GetEquippedWeaponPoisonCount(player, left) > 0)
 	poisonnum = std::to_string(GetEquippedWeaponPoisonCount(player, left));
-  if (player->GetEquippedEntryData(left))
-  if (auto pois = GetPoisonOnWeap(player->GetEquippedEntryData(left)); HasFirstEffect(pois)) {
+	if (auto pois = GetPoisonOnWeap(equippedEntry); HasFirstEffect(pois)) {
 	auto scale = 1.f;
 	BGSEntryPoint::HandleEntryPoint(BGSEntryPoint::ENTRY_POINT::kModSpellMagnitude, player, pois, nullptr, &scale);
 	poisonDMG = std::to_string((int)ceil(pois->effects[0]->effectItem.magnitude * scale));
   }
   auto name = weap->GetName();
-  if (player->GetEquippedEntryData(left) && player->GetEquippedEntryData(left)->GetDisplayName())
-  name = player->GetEquippedEntryData(left)->GetDisplayName();
-  int index = GetFormIndex(player->GetEquippedObject(left));
+	if (equippedEntry && equippedEntry->GetDisplayName())
+		name = equippedEntry->GetDisplayName();
+	int index = GetFormIndex(equippedObject);
   if (weap->formID == 0x1f4)
   name = "";
   std::string result =
@@ -288,8 +302,8 @@ RE::InventoryEntryData* CheckForm(RE::Actor* a, TESBoundObject* item)
  std::set<RE::TESBoundObject*> inv;
  auto changes = a->GetInventoryChanges();
  if (changes && changes->entryList) {
-  for (auto entry : *changes->entryList) {
-	if (entry->object && item == entry->object) {
+	for (auto entry : *changes->entryList) {
+	if (entry && entry->object && item == entry->object) {
 			inv.insert(entry->object);
 			return entry;
 	}
@@ -437,11 +451,11 @@ auto WidgetEquip::update() -> void
 	SpellItem* spell = nullptr;
 	if (shouteq->variations[2].word && IsWordUnlocked(0, 0, 0, shouteq->variations[2].word))
 		spell = shouteq->variations[2].spell;
-	else if (shouteq->variations[2].word && IsWordUnlocked(0, 0, 0, shouteq->variations[1].word))
+	else if (shouteq->variations[1].word && IsWordUnlocked(0, 0, 0, shouteq->variations[1].word))
 		spell = shouteq->variations[1].spell;
 	else if (shouteq->variations[0].word && IsWordUnlocked(0, 0, 0, shouteq->variations[0].word))
 		spell = shouteq->variations[0].spell;
-	if (spell && !spell->effects.empty()) {
+	if (spell && !spell->effects.empty() && spell->effects[0]) {
 		BGSEntryPoint::HandleEntryPoint(BGSEntryPoint::ENTRY_POINT::kModSpellMagnitude, player, spell, nullptr, &num);
 		power = (int)ceil((spell->effects[0]->effectItem.magnitude * num));
 	}
@@ -500,8 +514,10 @@ auto WidgetEquip::update() -> void
 void WidgetEquip::AdvanceMovie(const float interval, const uint32_t current_time)
 {
   logger::debug("AdvanceMovie");
- if (Settings::VisibleEquip_ && Settings::VisibleEquipKey)
+ if (Settings::VisibleEquip_ && Settings::VisibleEquipKey && Settings::UpdateEquip >= 0.2f) {
   update();
+  Settings::UpdateEquip = 0;
+ }
   IMenu::AdvanceMovie(interval, current_time);
 }
 
