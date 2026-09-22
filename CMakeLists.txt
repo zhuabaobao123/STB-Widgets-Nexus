@@ -74,7 +74,7 @@ endif ()
 
 # ---- Dependencies ----
 
-# Use the bundled CommonLibSSE-NG (CharmedBaryon) checkout. NG ships its own
+# Use the bundled CommonLibSSE-NG (alandtse) checkout. NG ships its own
 # unit tests which we don't need here, so disable them to avoid the Catch2 dep.
 set(BUILD_TESTS OFF CACHE BOOL "" FORCE)
 add_subdirectory(CommonLibSSE)
@@ -93,6 +93,8 @@ set(SOURCES
 	src/Serialization.h
 	src/ImGuiMenu.cpp
 	src/ImGuiMenu.h
+	src/Localization.cpp
+	src/Localization.h
 	src/InputHandler.cpp
 	src/InputHandler.h
 	src/WidgetManager.cpp
@@ -246,5 +248,3 @@ if (COPY_BUILD)
     COMMAND ${CMAKE_COMMAND} -E copy_if_different $<TARGET_PDB_FILE:${PROJECT_NAME}> "${STB_WIDGETS_DEPLOY_DIR}"
   )
 endif ()
-
-
