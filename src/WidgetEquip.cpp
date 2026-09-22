@@ -248,7 +248,7 @@ std::string MakeWeaponInfo(PlayerCharacter* player, bool left) {
 	if (player->GetCurrentAmmo() && weap->HasKeywordString("WeapTypeBow")) {
 		auto scale = 1.f;
 		BGSEntryPoint::HandleEntryPoint(BGSEntryPoint::ENTRY_POINT::kModAttackDamage, player, nullptr, nullptr, &scale);
-		num = player->GetCurrentAmmo()->data.damage * scale;
+		num = player->GetCurrentAmmo()->GetRuntimeData().data.damage * scale;
 	}
 	if (equippedEntry) {
 		num += player->GetDamage(equippedEntry);
@@ -273,7 +273,7 @@ std::string MakeWeaponInfo(PlayerCharacter* player, bool left) {
   std::string poisonDMG = "0";
   if (GetEquippedWeaponPoisonCount(player, left) > 0)
 	poisonnum = std::to_string(GetEquippedWeaponPoisonCount(player, left));
-	if (auto pois = GetPoisonOnWeap(equippedEntry); HasFirstEffect(pois)) {
+  if (auto pois = GetPoisonOnWeap(equippedEntry); HasFirstEffect(pois)) {
 	auto scale = 1.f;
 	BGSEntryPoint::HandleEntryPoint(BGSEntryPoint::ENTRY_POINT::kModSpellMagnitude, player, pois, nullptr, &scale);
 	poisonDMG = std::to_string((int)ceil(pois->effects[0]->effectItem.magnitude * scale));
@@ -477,8 +477,8 @@ auto WidgetEquip::update() -> void
 //			active_effect->spell->effects[0]->baseEffect == active_effect->effect->baseEffect)
 //		wind += 1;
 //	}
- //auto gv = TESForm::LookupByEditorID<TESGlobal>("aaMZgv_WidgetHealUse");
- //auto gv2 = TESForm::LookupByEditorID<TESGlobal>("aaMZgv_WidgetMagickaUse");
+  //auto gv = TESForm::LookupByEditorID<TESGlobal>("aaMZgv_WidgetHealUse");
+  //auto gv2 = TESForm::LookupByEditorID<TESGlobal>("aaMZgv_WidgetMagickaUse");
 // auto gv3 = TESForm::LookupByEditorID<TESGlobal>("aaMZgv_WidgetStaminaUse");
 
  std::string hpnum = zero;
@@ -517,7 +517,7 @@ void WidgetEquip::AdvanceMovie(const float interval, const uint32_t current_time
  if (Settings::VisibleEquip_ && Settings::VisibleEquipKey && Settings::UpdateEquip >= 0.2f) {
   update();
   Settings::UpdateEquip = 0;
- }
+  }
   IMenu::AdvanceMovie(interval, current_time);
 }
 
