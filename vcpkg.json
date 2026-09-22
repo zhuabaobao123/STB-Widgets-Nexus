@@ -5,8 +5,10 @@
   "homepage": "https://github.com/STB-Team/STB-Widgets-Nexus",
   "license": "MIT",
   "dependencies": [
+    "directxtk",
     "glm",
     "rapidcsv",
+    "rapidjson",
     "simpleini",
     "spdlog"
   ]
