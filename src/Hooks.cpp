@@ -311,9 +311,9 @@ private:
 	static void Update(PlayerCharacter* player, float delta)
 	{
 		if (auto camera = PlayerCamera::GetSingleton()){
-			if (camera->currentState == camera->cameraStates[CameraState::kAutoVanity] ||
-				camera->currentState == camera->cameraStates[CameraState::kVATS] ||
-				camera->currentState == camera->cameraStates[CameraState::kFree])
+			if (camera->IsCurrentState(CameraState::kAutoVanity, CameraState::kAutoVanity) ||
+				camera->IsCurrentState(CameraState::kVATS, CameraState::kVATS) ||
+				camera->IsCurrentState(CameraState::kFree, CameraState::kFree))
 				check2(false);
 			else if (auto ui = UI::GetSingleton();
 					 ui && !ui->IsMenuOpen(RE::MessageBoxMenu::MENU_NAME) && !ui->IsMenuOpen(RE::DialogueMenu::MENU_NAME) &&
