@@ -1,6 +1,7 @@
 #pragma once
 
 #define DEBUG
+#define NOMINMAX
 
 #include "RE/Skyrim.h"
 #include "SKSE/SKSE.h"
@@ -36,6 +37,9 @@ namespace stle
 	}
 }
 #define DLLEXPORT __declspec(dllexport)
+
+#include "Localization.h"
+#define _T(s) Localization::Translate(s)
 
 #include "Version.h"
 #define RELOCATION_OFFSET(SE, AE) REL::VariantOffset(SE, AE, 0).offset()
