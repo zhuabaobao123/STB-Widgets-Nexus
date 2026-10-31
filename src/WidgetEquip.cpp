@@ -4,6 +4,24 @@
 
 using namespace RE;
 
+// Actor::GetCurrentAmmo is a virtual whose vtable slot differs between game
+// versions (0x9E / 0x9F on different runtimes). Read the ammo through the
+// non-virtual AIProcess data instead so the widget keeps working on 1.7.104.
+static RE::TESAmmo* GetEquippedAmmo(RE::PlayerCharacter* player)
+{
+	if (!player) {
+		return nullptr;
+	}
+	if (const auto process = player->GetActorRuntimeData().currentProcess) {
+		if (const auto entry = process->GetCurrentAmmo()) {
+			if (const auto object = entry->object) {
+				return object->As<RE::TESAmmo>();
+			}
+		}
+	}
+	return nullptr;
+}
+
 // Magic forms coming from other mods can have an empty effect list; reading
 // effects[0] on those would be an out-of-bounds access (crash). These helpers
 // return a safe default instead.
@@ -466,7 +484,7 @@ auto WidgetEquip::update() -> void
  } else {
 	shout = "";
  }
- if (auto proj = player->GetCurrentAmmo())
+ if (auto proj = GetEquippedAmmo(player))
 	arrow = proj->GetName() + w + std::to_string(player->GetItemCount(proj));
  else
 	arrow = "Null&0";
